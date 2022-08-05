@@ -1,0 +1,8 @@
+{
+  "listenPort": 8000,
+  "maxQueryAmount": 10,
+  "apiCacheTtl": 3600,
+  "authToken": "<REPLACE_ME_WITH_YOUR_TOKEN>",
+  "umamiUrl": "https://analytics.0vv0.top",
+  "websiteId": "1"
+}
