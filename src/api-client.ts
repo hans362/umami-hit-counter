@@ -1,12 +1,15 @@
 import { Config } from './config'
 import Debug from 'debug'
 import axios from 'axios'
+import fs from 'fs'
+import { join as pathJoin } from 'path'
+import { parse } from 'csv-parse';
 
 const debug = Debug('api')
 
 class ApiClient {
   protected config: Config
-  
+
   constructor(config: Config) {
     this.config = config
     debug('config: ' + JSON.stringify(config))
@@ -20,10 +23,18 @@ class ApiClient {
    * @memberof ApiClient
    */
   async getPageViews(pages: string[]) {
+    // Read imported pageviews
+    const importedPvCount: { [uri: string]: number } = {}
+    const parser = fs
+      .createReadStream(pathJoin(__dirname, '../import.csv'))
+      .pipe(parse({ delimiter: ',' }));
+    for await (const record of parser) {
+      importedPvCount[record[0]] = parseInt(record[1])
+    }
 
     // Create Axios instance
     const instance = axios.create({
-      headers: {'Authorization': 'Bearer ' + this.config.authToken}
+      headers: { 'Authorization': 'Bearer ' + this.config.authToken }
     });
 
     // Build API request body
@@ -33,21 +44,24 @@ class ApiClient {
       end_at: Date.now().toString()
     }
 
-    const response = await instance.get(this.config.umamiUrl + '/api/website/' + this.config.websiteId + '/metrics', {params: requestBody})
+    const response = await instance.get(this.config.umamiUrl + '/api/website/' + this.config.websiteId + '/metrics', { params: requestBody })
 
-    const pvCount: {[uri: string]: number} = {}
+    const pvCount: { [uri: string]: number } = {}
 
     // Format API response
     for (const uri of response.data) {
-      if (pages.includes(uri.x)) { 
+      if (pages.includes(uri.x)) {
         pvCount[uri.x] = uri.y
       }
     }
 
-    // Set pageview of nonexistent URI to 0
+    // Set pageview of nonexistent URI to 0 and add imported pageviews
     pages.forEach(uri => {
       if (pvCount[uri] === undefined) {
         pvCount[uri] = 0
+      }
+      if (!(importedPvCount[uri] === undefined)) {
+        pvCount[uri] += importedPvCount[uri]
       }
     })
 
