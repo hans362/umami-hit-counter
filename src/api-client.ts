@@ -34,7 +34,7 @@ class ApiClient {
 
     // Create Axios instance
     const instance = axios.create({
-      headers: { 'Authorization': 'Bearer ' + this.config.authToken }
+      headers: { 'Authorization': 'Bearer ' + process.env.authToken || this.config.authToken }
     });
 
     // Build API request body
@@ -44,7 +44,7 @@ class ApiClient {
       end_at: Date.now().toString()
     }
 
-    const response = await instance.get(this.config.umamiUrl + '/api/website/' + this.config.websiteId + '/metrics', { params: requestBody })
+    const response = await instance.get(process.env.umamiUrl || this.config.umamiUrl + '/api/website/' + process.env.websiteId || this.config.websiteId + '/metrics', { params: requestBody })
 
     const pvCount: { [uri: string]: number } = {}
 
